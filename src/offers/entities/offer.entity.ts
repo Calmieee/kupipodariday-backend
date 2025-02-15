@@ -1,4 +1,4 @@
-import { IsInt, IsBoolean } from 'class-validator';
+import { IsBoolean } from 'class-validator';
 import { User } from 'src/users/entities/user.entity';
 import { Wish } from 'src/wishes/entities/wish.entity';
 import {
@@ -25,10 +25,9 @@ export class Offer {
   @ManyToOne(() => Wish, (wish) => wish.offers)
   @JoinColumn()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  item: any;
+  item: Wish;
 
-  @Column({ select: true })
-  @IsInt()
+  @Column({ type: 'numeric', precision: 10, scale: 2, select: true }) // Указываем тип decimal
   amount: number;
 
   @Column({ default: false })

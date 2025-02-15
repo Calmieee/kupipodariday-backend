@@ -1,26 +1,73 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Like, Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  create(createUserDto: CreateUserDto): Promise<User> {
+    return bcrypt.hash(createUserDto.password, 10).then((hashed) =>
+      this.userRepository.save({
+        ...createUserDto,
+        password: hashed,
+        about: createUserDto.about || 'Пока ничего не рассказал о себе',
+      }),
+    );
   }
 
-  findAll() {
-    return `This action returns all users`;
+  findById(id: number): Promise<User> {
+    return this.userRepository.findOneBy({ id });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findByUsername(username: string): Promise<User> {
+    return await this.userRepository.findOneBy({ username });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findByEmail(email: string): Promise<User> {
+    return await this.userRepository.findOneBy({ email });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async update(user: User, updateUserDto: UpdateUserDto) {
+    let updatedUser = {};
+
+    // eslint-disable-next-line no-prototype-builtins
+    if (updateUserDto.hasOwnProperty('password')) {
+      updatedUser = await bcrypt
+        .hash(updateUserDto.password, 10)
+        .then((hashed) =>
+          this.userRepository.save({
+            ...user,
+            ...updateUserDto,
+            password: hashed,
+          }),
+        );
+    } else {
+      updatedUser = await this.userRepository.save({
+        ...user,
+        ...updateUserDto,
+      });
+    }
+
+    return updatedUser;
+  }
+
+  async findMany(query: string) {
+    const users = await this.userRepository.find({
+      where: [{ username: Like(`%${query}%`) }, { email: Like(`%${query}%`) }],
+    });
+
+    if (!users.length) {
+      throw new Error();
+    }
+
+    return users;
   }
 }

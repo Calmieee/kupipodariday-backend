@@ -35,18 +35,23 @@ export class OffersService {
     }
 
     if (wish.owner.id === user.id) {
-      throw new BadRequestException(
-        'Только владелец подарка может его удалить',
-      );
+      throw new BadRequestException('Владелец подарка не может поддержать');
     }
 
-    const raised = wish.raised + amount;
+    const currentRaised =
+      typeof wish.raised === 'string' ? parseFloat(wish.raised) : wish.raised;
+
+    if (isNaN(currentRaised) || typeof amount !== 'number') {
+      throw new BadRequestException('Некорректные данные для расчета');
+    }
+
+    const raised = parseFloat((currentRaised + amount).toFixed(2));
 
     if (raised > wish.price) {
       throw new BadRequestException('Сумма вклада слишком большая');
-    } else {
-      wish.raised = wish.raised + amount;
     }
+
+    wish.raised = raised;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -58,13 +63,14 @@ export class OffersService {
         hidden,
         user,
       });
+
+      await queryRunner.manager.update(Wish, wish.id, { raised: wish.raised });
       delete user.password;
-      await queryRunner.manager.save(wish);
       await queryRunner.commitTransaction();
       return {};
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      return false;
+      throw new BadRequestException('Ошибка при создании оффера');
     } finally {
       await queryRunner.release();
     }
