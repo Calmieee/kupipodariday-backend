@@ -24,10 +24,9 @@ export class Offer {
 
   @ManyToOne(() => Wish, (wish) => wish.offers)
   @JoinColumn()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   item: Wish;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, select: true }) // Указываем тип decimal
+  @Column({ type: 'numeric', precision: 10, scale: 2, select: true })
   amount: number;
 
   @Column({ default: false })

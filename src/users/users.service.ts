@@ -38,7 +38,6 @@ export class UsersService {
   async update(user: User, updateUserDto: UpdateUserDto) {
     let updatedUser = {};
 
-    // eslint-disable-next-line no-prototype-builtins
     if (updateUserDto.hasOwnProperty('password')) {
       updatedUser = await bcrypt
         .hash(updateUserDto.password, 10)
